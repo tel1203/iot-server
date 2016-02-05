@@ -1,12 +1,7 @@
 #
-# iot-server.rb : IoT Server with REST-API for sensors/actuators
-#   v0.1 2015/11 : just storage with REST-API
-#
-# usage:
-#   ruby iot-server.rb
+# storager.rb : 
 #
 
-Version="0.1"
 require 'uri'
 
 class Storage
@@ -23,6 +18,8 @@ class Storage
     end
 
     @dir=dir
+
+    true
   end
 
   def make_filename(key)
