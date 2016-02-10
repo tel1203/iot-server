@@ -20,15 +20,25 @@ end
 
 uri = URI.parse(ARGV[0])
 http = Net::HTTP.new(uri.host, uri.port)
-
 req = Net::HTTP::Post.new(uri.request_uri)
-req["Content-Type"] = "application/json" # httpリクエストヘッダの追加
-req.body = jsondata # リクエストボデーにJSONをセット
 res = http.request(req)
 
+puts(">>> HTTP request")
+req["Content-Type"] = "application/json" # httpリクエストヘッダの追加
+req["Content-Length"] = jsondata.size.to_s
+req.body = jsondata # リクエストボデーにJSONをセット
+
+p req
+req.each do |name,value|
+  puts(name + " : " + value)
+end
+puts req.body
+puts
+
+puts(">>> HTTP response")
 p res
 res.each do |name,value|
   puts(name + " : " + value)
 end
-p res.body
+puts res.body
 

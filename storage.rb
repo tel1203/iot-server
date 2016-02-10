@@ -1,5 +1,5 @@
 #
-# storager.rb : 
+# storage.rb : data storage on local FS
 #
 
 require 'uri'
@@ -43,14 +43,47 @@ class Storage
     return (true)
   end
 
-  def get(key, count=1)
+  def get(key, query=nil)
     fname=make_filename(key)
 
-    data = `tail -n #{count} #{fname} 2> /dev/null`
-    return (nil) if ($? != 0)
-    output = JSON.parse(data)
+    data="{}"
+    if (query == nil) then
+      data = `tail -n 1 #{fname} 2> /dev/null`
+      return (nil) if ($? != 0)
+    end
+    if (query.size == 0) then
+      data = `tail -n 1 #{fname} 2> /dev/null`
+      return (nil) if ($? != 0)
+    end
 
-    return (output)
+    # parse query
+    keys=query.keys
+    if (keys.index("count")) then
+      count = query["count"]
+
+      if (count == "") then # count without option
+        result = `wc -l #{fname} 2> /dev/null`
+        return (nil) if ($? != 0)
+        num=result.split(" ")[0].to_i
+
+        # Making hash variable for output
+        # count: number of data
+        data_bin = Hash.new
+        data_bin["value"] = Hash.new
+        data_bin["value"]["count"]=num
+        data = data_bin.to_json
+      elsif (count != nil) then # count with number
+        data = `tail -n #{count} #{fname} 2> /dev/null`
+        return (nil) if ($? != 0)
+      end
+    end
+
+    records = Array.new
+    data.each_line do |d|
+      record = JSON.parse(d)
+      records.push(record["value"])
+    end
+    return (records)
   end
 end
 

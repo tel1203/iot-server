@@ -16,9 +16,22 @@ http = Net::HTTP.new(uri.host, uri.port)
 req = Net::HTTP::Get.new(uri.request_uri)
 res = http.request(req)
 
-p res
-res.each do |name,value|
-  puts name + " : " + value + "\n"
+if (ARGV[1] == "quiet") then
+  puts res.body
+else
+  puts(">>> HTTP request")
+  p req
+  req.each do |name,value|
+    puts(name + " : " + value)
+  end
+  puts req.body
+  
+  puts
+  puts(">>> HTTP response")
+  p res
+  res.each do |name,value|
+    puts(name + " : " + value)
+  end
+  puts res.body
 end
-p res.body
-
+  

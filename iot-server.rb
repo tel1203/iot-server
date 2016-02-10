@@ -1,6 +1,7 @@
 #
 # iot-server.rb : IoT Server with REST-API for sensors/actuators
-#   v0.1 2015/11 : just storage with REST-API
+#   v0.2 2016/02 : make storage on mongoDB
+#   v0.1 2015/11 : just storage with REST-API on local FS
 #
 # usage:
 #   ruby iot-server.rb
@@ -9,30 +10,11 @@
 Version="0.1"
 require 'uri'
 require 'json'
+require 'webrick'
 require './lib-generic.rb'
 require './storage.rb'
 
-require 'webrick'
-
-
-class MongoDB
-  def initialize()
-  end
-
-  def put(key, data)
-  end
-
-  def get(key)
-  end
-end
-
-
 module RestDataProcess
-  def extract_postkey(uripath)
-#    return (uripath.sub(/^\/iot\//, ""))
-    return (uripath.strip.split("/")[-1])
-  end
-
   def make_records_input(input)
   
     # extract keys in header
@@ -58,12 +40,17 @@ module RestDataProcess
     return (record_array)
   end
 
-  def save_records(records)
-#    @storage.put(key_url, records)
+  def save_records(key, records)
+    records.each do |record|
+      @storage.put(key, record)
+    end
   end
 
   def load_records(key, query=nil)
-#    data = @storage.get(key)
+    printf("load_record(): key:[%s] query:[%s]\n", key, query)
+    data = @storage.get(key, query)
+
+    return (data)
   end
 end
 
@@ -76,11 +63,11 @@ class RestDataServlet < WEBrick::HTTPServlet::AbstractServlet
   end
 
   def do_POST (req, res)
-    key_url = extract_postkey(req.path)
+    key = req.path_info[1, req.path_info.length-1]
     input = JSON.parse(req.body)
 
     # ERROR: no key spcified in URL
-    if (key_url == nil or key_url == "") then
+    if (key == nil or key == "") then
       puts("Error: No key in URL")
       res.status = 400 # 400: Bad Request
       return
@@ -94,7 +81,7 @@ class RestDataServlet < WEBrick::HTTPServlet::AbstractServlet
     end
 
     # ERROR: different key specified on URL and input data
-    if (key_url != input["key"]) then
+    if (key != input["key"]) then
       puts("Error: Keys difference")
       res.status = 400 # 400: Bad Request
       return
@@ -102,7 +89,7 @@ class RestDataServlet < WEBrick::HTTPServlet::AbstractServlet
 
     # Make data records for DB registration
     records = make_records_input(input)
-    save_records(records)
+    save_records(key, records)
 
 #    output = req.body
 #    res.body = output
@@ -111,8 +98,9 @@ class RestDataServlet < WEBrick::HTTPServlet::AbstractServlet
   end
 
   def do_GET (req, res)
-    key = extract_postkey(req.path)
-    load_records(key, query=nil)
+    key = req.path_info[1, req.path_info.length-1]
+    data = load_records(key, req.query)
+p data
 
     # ERROR: no data in the URL
     if (data == nil) then
@@ -126,15 +114,15 @@ class RestDataServlet < WEBrick::HTTPServlet::AbstractServlet
   end
 end
   
-#storage = Storage.new
-storage = MongoDB.new
 
+# Read option
 option=parse_option()
 port = option[:port]==nil ? 55555 : option[:port]
 @server = launch_webrick(".", nil, port)
     
-# サーバを開始する
+# Launch Server
 RESTURL_BASE="/api/v1"
+storage = Storage.new
 @server.mount(RESTURL_BASE+"/data", RestDataServlet, storage)
 @server.start
 
