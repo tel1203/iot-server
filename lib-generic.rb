@@ -24,7 +24,12 @@ def parse_option()
   return(option)
 end
 
+  module WEBrick::HTTPServlet
+    FileHandler.add_handler('rb', CGIHandler)
+  end
+
 def launch_webrick(documentroot, bindaddress, port)
+
   opt = { 
     :DocumentRoot   => documentroot,
     :BindAddress    => bindaddress,
