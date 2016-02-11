@@ -88,6 +88,7 @@ class RestDataServlet < WEBrick::HTTPServlet::AbstractServlet
     end
 
     # Make data records for DB registration
+    p input
     records = make_records_input(input)
     save_records(key, records)
 

@@ -1,8 +1,10 @@
-#!/bin/sh
-    if [ -z $HOME ];then HOME=/Users/tel; export HOME; fi
-    PATH=$HOME/.rbenv/shims:/usr/local/bin:/usr/bin:/bin:$PATH; export PATH
-    exec ruby -S -x $0 "$@"
-#! ruby
+#!/home/ylab/.rbenv/shims/ruby
+
+##!/bin/sh
+#    if [ -z $HOME ];then HOME=/Users/tel; export HOME; fi
+#    PATH=$HOME/.rbenv/shims:/usr/local/bin:/usr/bin:/bin:$PATH; export PATH
+#    exec ruby -S -x $0 "$@"
+##! ruby
 
 #
 # cgi_analyse_count_uniqperson.rb : return unique person number during date0 to date1 at specific location
@@ -28,16 +30,20 @@ def count_person(location, date0, date1)
   fname = storage.make_filename(location)
  
   uids = Array.new 
-  f = open(fname, "r")
-  while (line=f.gets) do
-    record = JSON.parse(line)
-    data = record["value"]["data"]
-    if (Time.parse(data["created_at"]).to_i >= date0 and
-        Time.parse(data["created_at"]).to_i < date1) then
-      uids.push(data["hashed_macaddress"])
-    end
-  end
 
+  begin
+    f = open(fname, "r")
+    while (line=f.gets) do
+      record = JSON.parse(line)
+      data = record["value"]["data"]
+      if (Time.parse(data["created_at"]).to_i >= date0 and
+          Time.parse(data["created_at"]).to_i < date1) then
+        uids.push(data["hashed_macaddress"])
+      end
+    end
+  rescue Errno::ENOENT
+  end
+  
   uids.uniq!
 
   return (uids.size)
@@ -47,6 +53,7 @@ end
 cgi = CGI.new
 
 #puts("Content-type: text/html\n\n")
+puts("Access-Control-Allow-Origin: *")
 puts("Content-type: application/json\n\n")
 
 location=cgi['location']
