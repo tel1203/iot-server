@@ -16,6 +16,8 @@
 #  date1: UNIXTIME, until
 #  location: sensor id
 #
+#"2016-02-24T00:00:00+09:00" 1456239600.0
+#"2016-02-24T00:04:00+09:00" 1456239840.0
 
 require 'cgi'
 require 'json'
@@ -27,29 +29,28 @@ def count_person(location, date0, date1)
   return if (date0 > date1)
 
   storage = Storage.new
-  fname = storage.make_filename(location)
- 
+  output = storage._get_records_period(location, date0, date1)
   uids = Array.new 
-
-  begin
-    f = open(fname, "r")
-    while (line=f.gets) do
-      record = JSON.parse(line)
-      data = record["value"]["data"]
-      if (Time.parse(data["created_at"]).to_i >= date0 and
-          Time.parse(data["created_at"]).to_i < date1) then
-        uids.push(data["hashed_macaddress"])
-      end
-    end
-  rescue Errno::ENOENT
+  output.each do |data|
+    uids.push(data["hashed_macaddress"])
   end
-  
   uids.uniq!
-
   return (uids.size)
 end
 
-# location=wifi_node1&date0=1438506060&date1=1438592460
+# location=wifi_node1&date0=1456239600.0&date1=1456239840.0
+# location=wifi_node1&date0=1456239600.0&date1=1456326000.0
+def debug()
+  location="wifi_node4"
+  date0=Time.parse("2016-02-18T00:00:00+09:00").to_f
+  date1=Time.parse("2016-02-19T00:00:00+09:00").to_f
+  count_person(location, date0, date1)
+end
+#debug()
+#exit
+
+
+
 cgi = CGI.new
 
 #puts("Content-type: text/html\n\n")
@@ -57,8 +58,8 @@ puts("Access-Control-Allow-Origin: *")
 puts("Content-type: application/json\n\n")
 
 location=cgi['location']
-date0=cgi['date0'].to_i
-date1=cgi['date1'].to_i
+date0=cgi['date0'].to_f
+date1=cgi['date1'].to_f
 if (location=="" or date0=="" or date1=="") then
   count = nil
 else

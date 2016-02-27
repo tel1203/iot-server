@@ -40,15 +40,26 @@ module RestDataProcess
     return (record_array)
   end
 
+  # Obsolete, delete later
   def save_records(key, records)
     records.each do |record|
       @storage.put(key, record)
     end
   end
 
+  # Store records to date separated directories
+  # key: Hashed key for records, time: unixtime at measured time, records: stored data
+  def save_records2(key, records)
+    records.each do |record|
+      time = Time.parse(record["data"]["created_at"]).to_f
+      @storage.put2(key, time, record)
+    end
+  end
+
   def load_records(key, query=nil)
     printf("load_record(): key:[%s] query:[%s]\n", key, query)
-    data = @storage.get(key, query)
+    #data = @storage.get(key, query)
+    data = @storage.get2(key, query)
 
     return (data)
   end
@@ -88,9 +99,9 @@ class RestDataServlet < WEBrick::HTTPServlet::AbstractServlet
     end
 
     # Make data records for DB registration
-    p input
     records = make_records_input(input)
-    save_records(key, records)
+    save_records(key, records) # Obsolete, delete later
+    save_records2(key, records)
 
 #    output = req.body
 #    res.body = output
