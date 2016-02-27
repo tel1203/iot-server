@@ -4,6 +4,7 @@
 
 require 'json'
 require 'uri'
+require 'base64'
 
 class Storage
   def initialize(dir="./data/")
@@ -31,6 +32,8 @@ class Storage
       exit
     end
     @dir2=dir
+
+    @c = Cache.new
 
     true
   end
@@ -174,7 +177,10 @@ class Storage
   ##########
   # For analysis
   def _get_records_period(key, since, till=0) # since, till: unixtime
-    files = _data_files(key)
+#    files = _data_files(key)
+    cachekey = sprintf("%s%s%s", key, since, till)
+    records = @c.restore(cachekey)
+    return (records) if (records != nil)
 
     records = Array.new
     time = since
@@ -201,10 +207,63 @@ class Storage
       end
     end
   
+    @c.store(cachekey, records)
     return (records)
   end
 
   ##########
+end
+
+
+class Cache
+  def initialize(dir="cache")
+    begin
+      File::ftype(dir)
+    rescue Errno::ENOENT
+      printf("Error: ENOENT: %s\n", dir)
+      printf("Create directory: %s\n", dir)
+      Dir.mkdir(dir)
+    rescue Errno::ENOTDIR
+      printf("Error: ENOTDIR: %s\n", dir)
+      exit
+    end
+    @dir = dir
+  end
+
+  def restore(key)
+    input = ""
+    begin
+      fname = _make_fname(key)
+#      f=open(fname, "rb")
+      input = File.binread(fname)
+    rescue Errno::ENOENT # No file
+      return (nil)
+    end
+
+#    input = f.gets
+#    f.close
+
+    #obj = Marshal.load( Base64.decode64(input) )
+    obj = Marshal.load(input)
+
+    return (obj)
+  end
+
+  def store(key, obj)
+    #output = Base64.encode64( Marshal.dump(obj) )
+    output = Marshal.dump(obj)
+  
+    fname = _make_fname(key)
+#    f=open(fname, "wb")
+#    f.puts(output)
+#    f.close
+    File.binwrite(fname, output)
+  end
+
+  def _make_fname(key)
+    fname=@dir+"/"+URI.escape(key)+".obj"
+    return (fname)
+  end
 
 end
 
